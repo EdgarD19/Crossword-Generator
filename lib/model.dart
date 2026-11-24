@@ -115,15 +115,86 @@ abstract class Crossword implements Built<Crossword, CrosswordBuilder> {
   /// A map from (x, y) [Location] to the [CrosswordCharacter] placed there.
   BuiltMap<Location, CrosswordCharacter> get characters;
 
-  Crossword addWord({
+  Crossword? addWord({
     required Location location,
     required String word,
     required Direction direction,
-  }) => rebuild(
-    (b) => b.words.add(
-      CrosswordWord.word(word: word, location: location, direction: direction),
-    ),
-  );
+  }) {
+    // Reject duplicate words.
+    if (words.any((placed) => placed.word == word)) return null;
+
+    // Reject words that conflict with an existing character or a word in the
+    // same direction, tracking whether the placement overlaps the crossword.
+    var overlaps = false;
+    for (final (idx, character) in word.characters.indexed) {
+      final cellLocation = switch (direction) {
+        Direction.across => location.rightOffset(idx),
+        Direction.down => location.downOffset(idx),
+      };
+      final existing = characters[cellLocation];
+      if (existing == null) continue;
+      if (existing.character != character) return null;
+      final sameDirectionWord = switch (direction) {
+        Direction.across => existing.acrossWord,
+        Direction.down => existing.downWord,
+      };
+      if (sameDirectionWord != null) return null;
+      overlaps = true;
+    }
+
+    // After the first word, every new word must overlap an existing word.
+    if (words.isNotEmpty && !overlaps) return null;
+
+    final candidate = rebuild(
+      (b) => b.words.add(
+        CrosswordWord.word(word: word, location: location, direction: direction),
+      ),
+    );
+
+    // Reject candidates that violate English crossword constraints.
+    if (!candidate.valid) return null;
+    return candidate;
+  }
+
+  /// Whether this crossword satisfies English crossword constraints:
+  ///
+  /// 1. No duplicate words.
+  /// 2. Every character stays within `[0, width)` and `[0, height)` and is
+  ///    part of at least one word.
+  /// 3. Horizontally adjacent characters share the same `acrossWord`.
+  /// 4. Vertically adjacent characters share the same `downWord`.
+  bool get valid {
+    // 1. No duplicate words.
+    final uniqueWords = words.map((word) => word.word).toSet();
+    if (uniqueWords.length != words.length) return false;
+
+    for (final MapEntry(key: location, value: character) in characters.entries) {
+      // 2. Characters stay within grid bounds...
+      if (location.x < 0 || location.x >= width || location.y < 0 || location.y >= height) {
+        return false;
+      }
+
+      // ...and are part of at least one word.
+      if (character.acrossWord == null && character.downWord == null) return false;
+
+      // 3. Horizontal neighbors must share the same across word (prevents
+      //    unwanted two-letter collisions side by side).
+      final rightNeighbor = characters[location.right];
+      if (rightNeighbor != null) {
+        final acrossWord = character.acrossWord;
+        if (acrossWord == null || rightNeighbor.acrossWord != acrossWord) return false;
+      }
+
+      // 4. Vertical neighbors must share the same down word.
+      final downNeighbor = characters[location.down];
+      if (downNeighbor != null) {
+        final downWord = character.downWord;
+        if (downWord == null || downNeighbor.downWord != downWord) return false;
+      }
+    }
+
+    return true;
+  }
 
   @BuiltValueHook(finalizeBuilder: true)
   static void _fillCharacters(CrosswordBuilder b) {

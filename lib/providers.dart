@@ -1,13 +1,12 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:built_collection/built_collection.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'package:generate_crossword/isolates.dart';
 import 'package:generate_crossword/model.dart' as model;
-import 'package:generate_crossword/utils.dart';
 
 part 'providers.g.dart';
 
@@ -54,24 +53,9 @@ Stream<model.Crossword> crossword(Ref ref) async* {
   final size = ref.watch(sizeProvider);
   final wordList = await ref.watch(wordListProvider.future);
 
-  final random = Random();
-  final targetFilled = (size.width * size.height * 0.8).round();
-
-  var crossword = model.Crossword.crossword(width: size.width, height: size.height);
-  yield crossword;
-
-  while (crossword.characters.length < targetFilled) {
-    final direction = model.Direction.values[random.nextInt(model.Direction.values.length)];
-    final word = wordList.randomElement();
-    final location = model.Location.at(
-      random.nextInt(size.width),
-      random.nextInt(size.height),
-    );
-
-    crossword = crossword.addWord(location: location, word: word, direction: direction);
-    yield crossword;
-
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-  }
+  yield* exploreCrosswordSolutions(
+    crossword: model.Crossword.crossword(width: size.width, height: size.height),
+    wordList: wordList,
+  );
 }
 

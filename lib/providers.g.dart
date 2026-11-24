@@ -22,7 +22,7 @@ final wordListProvider = AutoDisposeFutureProvider<BuiltSet<String>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef WordListRef = AutoDisposeFutureProviderRef<BuiltSet<String>>;
-String _$crosswordHash() => r'05682a3eb4aa3b28749174eb0ff96282d8d6013d';
+String _$crosswordHash() => r'83450242485e0c0724f9ebe0ca259bce171059a1';
 
 /// See also [crossword].
 @ProviderFor(crossword)
