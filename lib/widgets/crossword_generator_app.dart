@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:generate_crossword/providers.dart';
+import 'package:generate_crossword/widgets/crossword_widget.dart';
 
 class CrosswordGeneratorApp extends StatelessWidget {
   const CrosswordGeneratorApp({super.key});
@@ -10,8 +11,11 @@ class CrosswordGeneratorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return _EagerInitialization(
       child: Scaffold(
-        appBar: AppBar(title: const Text('Crossword Generator')),
-        body: const _WordListView(),
+        appBar: AppBar(
+          title: const Text('Crossword Generator'),
+          actions: const [_CrosswordGeneratorMenu()],
+        ),
+        body: const CrosswordWidget(),
       ),
     );
   }
@@ -32,21 +36,48 @@ class _EagerInitialization extends ConsumerWidget {
   }
 }
 
-class _WordListView extends ConsumerWidget {
-  const _WordListView();
+/// A [MenuAnchor] in the [AppBar] to switch the [CrosswordSize] of the grid.
+class _CrosswordGeneratorMenu extends ConsumerStatefulWidget {
+  const _CrosswordGeneratorMenu();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final wordListAsync = ref.watch(wordListProvider);
-    return wordListAsync.when(
-      data: (wordList) => ListView.builder(
-        itemCount: wordList.length,
-        itemBuilder: (context, index) {
-          return ListTile(title: Text(wordList.elementAt(index)));
-        },
+  ConsumerState<_CrosswordGeneratorMenu> createState() => _CrosswordGeneratorMenuState();
+}
+
+class _CrosswordGeneratorMenuState extends ConsumerState<_CrosswordGeneratorMenu> {
+  final MenuController _controller = MenuController();
+
+  @override
+  Widget build(BuildContext context) {
+    final currentSize = ref.watch(sizeProvider);
+
+    return MenuAnchor(
+      controller: _controller,
+      menuChildren: [
+        for (final size in CrosswordSize.values)
+          MenuItemButton(
+            onPressed: () => ref.read(sizeProvider.notifier).setSize(size),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (size == currentSize)
+                    const Icon(Icons.check, size: 18)
+                  else
+                    const SizedBox(width: 18),
+                  const SizedBox(width: 8),
+                  Text(size.label),
+                ],
+              ),
+            ),
+          ),
+      ],
+      builder: (context, controller, child) => IconButton(
+        onPressed: () => controller.open(),
+        icon: const Icon(Icons.grid_on),
+        tooltip: 'Grid size',
       ),
-      error: (error, stackTrace) => Center(child: Text('$error')),
-      loading: () => const Center(child: CircularProgressIndicator()),
     );
   }
 }

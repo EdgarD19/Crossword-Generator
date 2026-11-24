@@ -7,6 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 
 import 'package:generate_crossword/main.dart';
 
@@ -16,17 +17,19 @@ void main() {
 
     // Loading assets/words.txt is real asynchronous I/O; runAsync lets it
     // complete outside the fake-async clock, then pump to rebuild the UI.
-    final loaded = await tester.runAsync(() async {
-      for (var i = 0; i < 100; i++) {
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        return true;
-      }
-      return false;
-    });
-    expect(loaded, isTrue);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
     await tester.pump();
 
     expect(find.text('Crossword Generator'), findsOneWidget);
-    expect(find.byType(ListTile, skipOffstage: false), findsWidgets);
+    // The body is now a 2D crossword grid instead of the word list.
+    expect(find.byType(TableView), findsOneWidget);
+
+    // Unmount the app so the autoDispose crossword stream provider is
+    // cancelled, and let the pending 100ms generator timer fire to avoid a
+    // "Timer is still pending" invariant failure at the end of the test.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 200));
   });
 }
