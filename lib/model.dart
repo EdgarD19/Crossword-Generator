@@ -2,6 +2,7 @@ import 'package:built_collection/built_collection.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 import 'package:characters/characters.dart';
+import 'package:intl/intl.dart';
 
 part 'model.g.dart';
 
@@ -234,8 +235,48 @@ abstract class Crossword implements Built<Crossword, CrosswordBuilder> {
   }
 }
 
-@SerializersFor([Location, Crossword, CrosswordWord, CrosswordCharacter, WorkQueue])
+@SerializersFor([Location, Crossword, CrosswordWord, CrosswordCharacter, WorkQueue, DisplayInfo])
 final Serializers serializers = _$serializers;
+
+/// Real-time generation statistics for the floating HUD overlay.
+abstract class DisplayInfo implements Built<DisplayInfo, DisplayInfoBuilder> {
+  DisplayInfo._();
+
+  factory DisplayInfo([void Function(DisplayInfoBuilder b) updates]) = _$DisplayInfo;
+
+  static DisplayInfo get empty => DisplayInfo(
+    (b) => b
+      ..wordsInGridCount = '0'
+      ..candidateWordsCount = '0'
+      ..locationsToExploreCount = '0'
+      ..knownBadLocationsCount = '0'
+      ..gridFilledPercentage = '0',
+  );
+
+  factory DisplayInfo.from({required WorkQueue workQueue}) {
+    final format = NumberFormat.decimalPattern();
+    final crossword = workQueue.crossword;
+    final totalCells = crossword.width * crossword.height;
+    final gridFilledPercentage = totalCells == 0
+        ? 0.0
+        : crossword.characters.length / totalCells * 100;
+
+    return DisplayInfo(
+      (b) => b
+        ..wordsInGridCount = format.format(crossword.words.length)
+        ..candidateWordsCount = format.format(workQueue.candidateWords.length)
+        ..locationsToExploreCount = format.format(workQueue.locationsToTry.length)
+        ..knownBadLocationsCount = format.format(workQueue.badLocations.length)
+        ..gridFilledPercentage = format.format(gridFilledPercentage),
+    );
+  }
+
+  String get wordsInGridCount;
+  String get candidateWordsCount;
+  String get locationsToExploreCount;
+  String get knownBadLocationsCount;
+  String get gridFilledPercentage;
+}
 
 /// The backtracking search frontier for crossword generation.
 ///

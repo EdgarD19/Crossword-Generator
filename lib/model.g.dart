@@ -501,6 +501,161 @@ class CrosswordBuilder implements Builder<Crossword, CrosswordBuilder> {
   }
 }
 
+class _$DisplayInfo extends DisplayInfo {
+  @override
+  final String wordsInGridCount;
+  @override
+  final String candidateWordsCount;
+  @override
+  final String locationsToExploreCount;
+  @override
+  final String knownBadLocationsCount;
+  @override
+  final String gridFilledPercentage;
+
+  factory _$DisplayInfo([void Function(DisplayInfoBuilder)? updates]) =>
+      (new DisplayInfoBuilder()..update(updates))._build();
+
+  _$DisplayInfo._(
+      {required this.wordsInGridCount,
+      required this.candidateWordsCount,
+      required this.locationsToExploreCount,
+      required this.knownBadLocationsCount,
+      required this.gridFilledPercentage})
+      : super._() {
+    BuiltValueNullFieldError.checkNotNull(
+        wordsInGridCount, r'DisplayInfo', 'wordsInGridCount');
+    BuiltValueNullFieldError.checkNotNull(
+        candidateWordsCount, r'DisplayInfo', 'candidateWordsCount');
+    BuiltValueNullFieldError.checkNotNull(
+        locationsToExploreCount, r'DisplayInfo', 'locationsToExploreCount');
+    BuiltValueNullFieldError.checkNotNull(
+        knownBadLocationsCount, r'DisplayInfo', 'knownBadLocationsCount');
+    BuiltValueNullFieldError.checkNotNull(
+        gridFilledPercentage, r'DisplayInfo', 'gridFilledPercentage');
+  }
+
+  @override
+  DisplayInfo rebuild(void Function(DisplayInfoBuilder) updates) =>
+      (toBuilder()..update(updates)).build();
+
+  @override
+  DisplayInfoBuilder toBuilder() => new DisplayInfoBuilder()..replace(this);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(other, this)) return true;
+    return other is DisplayInfo &&
+        wordsInGridCount == other.wordsInGridCount &&
+        candidateWordsCount == other.candidateWordsCount &&
+        locationsToExploreCount == other.locationsToExploreCount &&
+        knownBadLocationsCount == other.knownBadLocationsCount &&
+        gridFilledPercentage == other.gridFilledPercentage;
+  }
+
+  @override
+  int get hashCode {
+    var _$hash = 0;
+    _$hash = $jc(_$hash, wordsInGridCount.hashCode);
+    _$hash = $jc(_$hash, candidateWordsCount.hashCode);
+    _$hash = $jc(_$hash, locationsToExploreCount.hashCode);
+    _$hash = $jc(_$hash, knownBadLocationsCount.hashCode);
+    _$hash = $jc(_$hash, gridFilledPercentage.hashCode);
+    _$hash = $jf(_$hash);
+    return _$hash;
+  }
+
+  @override
+  String toString() {
+    return (newBuiltValueToStringHelper(r'DisplayInfo')
+          ..add('wordsInGridCount', wordsInGridCount)
+          ..add('candidateWordsCount', candidateWordsCount)
+          ..add('locationsToExploreCount', locationsToExploreCount)
+          ..add('knownBadLocationsCount', knownBadLocationsCount)
+          ..add('gridFilledPercentage', gridFilledPercentage))
+        .toString();
+  }
+}
+
+class DisplayInfoBuilder implements Builder<DisplayInfo, DisplayInfoBuilder> {
+  _$DisplayInfo? _$v;
+
+  String? _wordsInGridCount;
+  String? get wordsInGridCount => _$this._wordsInGridCount;
+  set wordsInGridCount(String? wordsInGridCount) =>
+      _$this._wordsInGridCount = wordsInGridCount;
+
+  String? _candidateWordsCount;
+  String? get candidateWordsCount => _$this._candidateWordsCount;
+  set candidateWordsCount(String? candidateWordsCount) =>
+      _$this._candidateWordsCount = candidateWordsCount;
+
+  String? _locationsToExploreCount;
+  String? get locationsToExploreCount => _$this._locationsToExploreCount;
+  set locationsToExploreCount(String? locationsToExploreCount) =>
+      _$this._locationsToExploreCount = locationsToExploreCount;
+
+  String? _knownBadLocationsCount;
+  String? get knownBadLocationsCount => _$this._knownBadLocationsCount;
+  set knownBadLocationsCount(String? knownBadLocationsCount) =>
+      _$this._knownBadLocationsCount = knownBadLocationsCount;
+
+  String? _gridFilledPercentage;
+  String? get gridFilledPercentage => _$this._gridFilledPercentage;
+  set gridFilledPercentage(String? gridFilledPercentage) =>
+      _$this._gridFilledPercentage = gridFilledPercentage;
+
+  DisplayInfoBuilder();
+
+  DisplayInfoBuilder get _$this {
+    final $v = _$v;
+    if ($v != null) {
+      _wordsInGridCount = $v.wordsInGridCount;
+      _candidateWordsCount = $v.candidateWordsCount;
+      _locationsToExploreCount = $v.locationsToExploreCount;
+      _knownBadLocationsCount = $v.knownBadLocationsCount;
+      _gridFilledPercentage = $v.gridFilledPercentage;
+      _$v = null;
+    }
+    return this;
+  }
+
+  @override
+  void replace(DisplayInfo other) {
+    ArgumentError.checkNotNull(other, 'other');
+    _$v = other as _$DisplayInfo;
+  }
+
+  @override
+  void update(void Function(DisplayInfoBuilder)? updates) {
+    if (updates != null) updates(this);
+  }
+
+  @override
+  DisplayInfo build() => _build();
+
+  _$DisplayInfo _build() {
+    final _$result = _$v ??
+        new _$DisplayInfo._(
+            wordsInGridCount: BuiltValueNullFieldError.checkNotNull(
+                wordsInGridCount, r'DisplayInfo', 'wordsInGridCount'),
+            candidateWordsCount: BuiltValueNullFieldError.checkNotNull(
+                candidateWordsCount, r'DisplayInfo', 'candidateWordsCount'),
+            locationsToExploreCount: BuiltValueNullFieldError.checkNotNull(
+                locationsToExploreCount,
+                r'DisplayInfo',
+                'locationsToExploreCount'),
+            knownBadLocationsCount: BuiltValueNullFieldError.checkNotNull(
+                knownBadLocationsCount,
+                r'DisplayInfo',
+                'knownBadLocationsCount'),
+            gridFilledPercentage: BuiltValueNullFieldError.checkNotNull(
+                gridFilledPercentage, r'DisplayInfo', 'gridFilledPercentage'));
+    replace(_$result);
+    return _$result;
+  }
+}
+
 class _$WorkQueue extends WorkQueue {
   @override
   final Crossword crossword;

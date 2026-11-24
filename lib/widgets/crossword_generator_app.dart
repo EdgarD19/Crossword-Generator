@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:generate_crossword/providers.dart';
+import 'package:generate_crossword/widgets/crossword_info_widget.dart';
 import 'package:generate_crossword/widgets/crossword_widget.dart';
 
 class CrosswordGeneratorApp extends StatelessWidget {
@@ -15,7 +16,17 @@ class CrosswordGeneratorApp extends StatelessWidget {
           title: const Text('Crossword Generator'),
           actions: const [_CrosswordGeneratorMenu()],
         ),
-        body: const CrosswordWidget(),
+        body: Consumer(
+          builder: (context, ref, _) {
+            final showDisplayInfo = ref.watch(showDisplayInfoProvider);
+            return Stack(
+              children: [
+                const CrosswordWidget(),
+                if (showDisplayInfo) const CrosswordInfoWidget(),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -36,7 +47,8 @@ class _EagerInitialization extends ConsumerWidget {
   }
 }
 
-/// A [MenuAnchor] in the [AppBar] to switch the [CrosswordSize] of the grid.
+/// A [MenuAnchor] in the [AppBar] to switch the [CrosswordSize] of the grid
+/// and toggle the statistics overlay.
 class _CrosswordGeneratorMenu extends ConsumerStatefulWidget {
   const _CrosswordGeneratorMenu();
 
@@ -50,6 +62,7 @@ class _CrosswordGeneratorMenuState extends ConsumerState<_CrosswordGeneratorMenu
   @override
   Widget build(BuildContext context) {
     final currentSize = ref.watch(sizeProvider);
+    final showDisplayInfo = ref.watch(showDisplayInfoProvider);
 
     return MenuAnchor(
       controller: _controller,
@@ -72,6 +85,14 @@ class _CrosswordGeneratorMenuState extends ConsumerState<_CrosswordGeneratorMenu
               ),
             ),
           ),
+        MenuItemButton(
+          onPressed: () => ref.read(showDisplayInfoProvider.notifier).toggle(),
+          leadingIcon: Icon(
+            showDisplayInfo ? Icons.visibility : Icons.visibility_off,
+            size: 18,
+          ),
+          child: const Text('Display Info'),
+        ),
       ],
       builder: (context, controller, child) => IconButton(
         onPressed: () => controller.open(),

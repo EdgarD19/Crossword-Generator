@@ -17,7 +17,7 @@ import 'package:generate_crossword/utils.dart';
 /// `BuiltSet<String>`, a [model.Location] and a [model.Direction]. Closures
 /// defined inside a Riverpod provider would capture the surrounding
 /// `Ref`/provider element, which is unsendable.
-Stream<model.Crossword> exploreCrosswordSolutions({
+Stream<model.WorkQueue> exploreCrosswordSolutions({
   required model.Crossword crossword,
   required BuiltSet<String> wordList,
 }) async* {
@@ -30,7 +30,7 @@ Stream<model.Crossword> exploreCrosswordSolutions({
     startLocation: model.Location.at(0, 0),
   );
 
-  yield workQueue.crossword;
+  yield workQueue;
 
   while (!workQueue.isCompleted) {
     final locations = workQueue.locationsToTry.keys.toList();
@@ -46,7 +46,7 @@ Stream<model.Crossword> exploreCrosswordSolutions({
         ? workQueue.updateFrom(candidate)
         : workQueue.remove(location);
 
-    yield workQueue.crossword;
+    yield workQueue;
   }
 
   stopwatch.stop();
