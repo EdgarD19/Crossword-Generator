@@ -40,7 +40,7 @@ final expectedRemainingTimeProvider = AutoDisposeProvider<Duration>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ExpectedRemainingTimeRef = AutoDisposeProviderRef<Duration>;
-String _$workQueueHash() => r'24598e65efcbee6de252f66c7b9a1424a2544369';
+String _$workQueueHash() => r'a15da07269711fd377e492e35a1cc47aa236ec94';
 
 /// See also [workQueue].
 @ProviderFor(workQueue)
@@ -114,6 +114,21 @@ final showDisplayInfoProvider =
 );
 
 typedef _$ShowDisplayInfo = Notifier<bool>;
+String _$workerCountHash() => r'6a9b99efd3cd815f1e11490eec978e77650b7cd6';
+
+/// See also [WorkerCount].
+@ProviderFor(WorkerCount)
+final workerCountProvider =
+    NotifierProvider<WorkerCount, BackgroundWorkers>.internal(
+  WorkerCount.new,
+  name: r'workerCountProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$workerCountHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$WorkerCount = Notifier<BackgroundWorkers>;
 String _$displayInfoHash() => r'e13b025e298cda3bbeb1fd778fd080a7aa44a9fc';
 
 /// See also [DisplayInfo].

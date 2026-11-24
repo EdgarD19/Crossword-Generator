@@ -14,6 +14,7 @@ class CrosswordInfoWidget extends ConsumerWidget {
     final startTime = ref.watch(startTimeProvider);
     final endTime = ref.watch(endTimeProvider);
     final expectedRemainingTime = ref.watch(expectedRemainingTimeProvider);
+    final workerCount = ref.watch(workerCountProvider);
 
     return Align(
       alignment: Alignment.bottomRight,
@@ -45,6 +46,10 @@ class CrosswordInfoWidget extends ConsumerWidget {
                 _CrosswordInfoRichText(
                   label: 'Grid filled',
                   value: '${displayInfo.gridFilledPercentage}%',
+                ),
+                _CrosswordInfoRichText(
+                  label: 'Max worker count',
+                  value: workerCount.count.toString(),
                 ),
                 switch ((startTime, endTime)) {
                   (null, _) => const _CrosswordInfoRichText(

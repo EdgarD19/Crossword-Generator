@@ -37,17 +37,47 @@ class CrosswordWidget extends ConsumerWidget {
             ),
           );
 
-          return Container(
+          // Only rebuild this cell when its membership in the search
+          // frontier changes.
+          final isExplorationCell = ref.watch(
+            workQueueProvider.select(
+              (workQueueAsync) => workQueueAsync.when(
+                data: (workQueue) => workQueue.locationsToTry.containsKey(location),
+                error: (error, stackTrace) => false,
+                loading: () => false,
+              ),
+            ),
+          );
+
+          final colorScheme = Theme.of(context).colorScheme;
+          var backgroundColor = Colors.transparent;
+          Color? foregroundColor;
+          if (isExplorationCell) {
+            // Cells waiting to be explored are highlighted by inverting the
+            // primary and onPrimary colors.
+            backgroundColor = colorScheme.primary;
+            foregroundColor = colorScheme.onPrimary;
+          } else if (character != null) {
+            backgroundColor = colorScheme.primaryContainer;
+            foregroundColor = colorScheme.onPrimaryContainer;
+          }
+
+          final style = (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
+              .copyWith(color: foregroundColor);
+
+          return AnimatedContainer(
+            duration: Durations.extralong1,
+            curve: Curves.easeInOut,
             decoration: BoxDecoration(
-              color: character == null
-                  ? Colors.transparent
-                  : Theme.of(context).colorScheme.primaryContainer,
+              color: backgroundColor,
               border: Border.all(color: Theme.of(context).dividerColor),
             ),
             alignment: Alignment.center,
-            child: Text(
-              character?.character ?? '',
-              style: Theme.of(context).textTheme.bodyMedium,
+            child: AnimatedDefaultTextStyle(
+              duration: Durations.extralong1,
+              curve: Curves.easeInOut,
+              style: style,
+              child: Text(character?.character ?? ''),
             ),
           );
         },

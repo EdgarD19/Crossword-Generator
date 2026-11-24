@@ -74,6 +74,31 @@ class ShowDisplayInfo extends _$ShowDisplayInfo {
   void toggle() => state = !state;
 }
 
+enum BackgroundWorkers {
+  one(1),
+  two(2),
+  four(4),
+  eight(8),
+  sixteen(16),
+  thirtyTwo(32),
+  sixtyFour(64),
+  oneTwentyEight(128);
+
+  const BackgroundWorkers(this.count);
+
+  final int count;
+
+  String get label => '$count workers';
+}
+
+@Riverpod(keepAlive: true)
+class WorkerCount extends _$WorkerCount {
+  @override
+  BackgroundWorkers build() => BackgroundWorkers.four;
+
+  void setWorkers(BackgroundWorkers workers) => state = workers;
+}
+
 /// Assumed fraction of the grid that is filled when the backtracking search
 /// runs out of open intersections, used to estimate remaining time.
 const _estimatedTotalCoverage = 0.54;
@@ -127,9 +152,12 @@ Stream<model.WorkQueue> workQueue(Ref ref) async* {
   ref.read(endTimeProvider.notifier).reset();
   ref.read(startTimeProvider.notifier).start();
 
+  // Watching the worker count restarts generation with the new group size,
+  // just like changing the grid size does.
   yield* exploreCrosswordSolutions(
     crossword: model.Crossword.crossword(width: size.width, height: size.height),
     wordList: wordList,
+    maxWorkerCount: ref.watch(workerCountProvider).count,
   );
 
   ref.read(endTimeProvider.notifier).stop();
