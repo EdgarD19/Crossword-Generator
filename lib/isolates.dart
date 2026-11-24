@@ -1,49 +1,99 @@
 import 'dart:math';
 
 import 'package:built_collection/built_collection.dart';
+import 'package:characters/characters.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:generate_crossword/model.dart' as model;
 import 'package:generate_crossword/utils.dart';
 
-/// Explores random candidate word placements in a background isolate,
-/// yielding valid [model.Crossword] updates until 80% of the grid is filled.
+/// Drives crossword generation as a guided backtracking search over a
+/// [model.WorkQueue], yielding crossword updates until the queue is
+/// completed (no open intersections remain).
 ///
 /// This function lives in its own library (not in `providers.dart`) so that
-/// the closure passed to `compute` only captures immutable, isolate-sendable
-/// values: a [model.Crossword] and the Dart record `(word, direction,
-/// location)`. Closures defined inside a Riverpod provider would capture the
-/// surrounding `Ref`/provider element, which is unsendable.
+/// the top-level `_generateCandidate` passed to `compute` only captures
+/// immutable, isolate-sendable values: a [model.Crossword], a
+/// `BuiltSet<String>`, a [model.Location] and a [model.Direction]. Closures
+/// defined inside a Riverpod provider would capture the surrounding
+/// `Ref`/provider element, which is unsendable.
 Stream<model.Crossword> exploreCrosswordSolutions({
   required model.Crossword crossword,
   required BuiltSet<String> wordList,
 }) async* {
+  final stopwatch = Stopwatch()..start();
   final random = Random();
-  final targetFilled = (crossword.width * crossword.height * 0.8).round();
 
-  yield crossword;
+  var workQueue = model.WorkQueue.from(
+    crossword: crossword,
+    candidateWords: wordList,
+    startLocation: model.Location.at(0, 0),
+  );
 
-  while (crossword.characters.length < targetFilled) {
-    final direction = model.Direction.values[random.nextInt(model.Direction.values.length)];
-    final word = wordList.randomElement();
-    final location = model.Location.at(
-      random.nextInt(crossword.width),
-      random.nextInt(crossword.height),
+  yield workQueue.crossword;
+
+  while (!workQueue.isCompleted) {
+    final locations = workQueue.locationsToTry.keys.toList();
+    final location = locations[random.nextInt(locations.length)];
+    final direction = workQueue.locationsToTry[location]!;
+
+    final candidate = await compute(
+      _generateCandidate,
+      (workQueue.crossword, workQueue.candidateWords, location, direction),
     );
 
-    // Validate the candidate placement in a background isolate so that the
-    // heavy `addWord`/`valid` work never blocks Flutter's render loop.
-    final candidate = await compute(((String, model.Direction, model.Location) wordToAdd) {
-      final (word, direction, location) = wordToAdd;
-      return crossword.addWord(word: word, direction: direction, location: location);
-    }, (word, direction, location));
+    workQueue = candidate != null
+        ? workQueue.updateFrom(candidate)
+        : workQueue.remove(location);
 
-    if (candidate != null) {
-      crossword = candidate;
-    }
-
-    yield crossword;
-
-    await Future<void>.delayed(const Duration(milliseconds: 100));
+    yield workQueue.crossword;
   }
+
+  stopwatch.stop();
+  debugPrint('Total generation time: ${stopwatch.elapsed.formatted}');
+}
+
+/// Tries up to 1,000 shuffled candidate words containing the character at
+/// [model.Location] for the given [model.Direction], returning the first
+/// crossword that accepts one, or `null` when the location is a dead end.
+///
+/// Each word is tried aligned so that any of its occurrences of the
+/// intersection character lands on the target location, not just its first
+/// letter, which lets words cross at any position.
+model.Crossword? _generateCandidate(
+  (model.Crossword, BuiltSet<String>, model.Location, model.Direction) args,
+) {
+  final (crossword, candidateWords, location, direction) = args;
+
+  // An empty grid has no character at the seed location yet; any word is a
+  // valid seed. Otherwise only words containing the intersection character
+  // can cross there.
+  final character = crossword.characters[location]?.character;
+  final candidates = character == null
+      ? candidateWords
+      : candidateWords.where((word) => word.contains(character));
+
+  final shuffledWords = candidates.toList()..shuffle(Random());
+
+  for (final word in shuffledWords.take(1000)) {
+    for (final (idx, wordCharacter) in word.characters.indexed) {
+      // The seed word must start exactly at the seed location.
+      if (character == null && idx != 0) continue;
+      if (character != null && wordCharacter != character) continue;
+
+      final start = switch (direction) {
+        model.Direction.across => location.leftOffset(idx),
+        model.Direction.down => location.upOffset(idx),
+      };
+
+      final candidate = crossword.addWord(
+        word: word,
+        direction: direction,
+        location: start,
+      );
+      if (candidate != null) return candidate;
+    }
+  }
+
+  return null;
 }

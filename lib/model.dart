@@ -161,8 +161,10 @@ abstract class Crossword implements Built<Crossword, CrosswordBuilder> {
   /// 1. No duplicate words.
   /// 2. Every character stays within `[0, width)` and `[0, height)` and is
   ///    part of at least one word.
-  /// 3. Horizontally adjacent characters share the same `acrossWord`.
-  /// 4. Vertically adjacent characters share the same `downWord`.
+  /// 3. Horizontally adjacent characters share the same `acrossWord`, when
+  ///    either has one (prevents parallel words colliding side by side).
+  /// 4. Vertically adjacent characters share the same `downWord`, when
+  ///    either has one.
   bool get valid {
     // 1. No duplicate words.
     final uniqueWords = words.map((word) => word.word).toSet();
@@ -177,19 +179,18 @@ abstract class Crossword implements Built<Crossword, CrosswordBuilder> {
       // ...and are part of at least one word.
       if (character.acrossWord == null && character.downWord == null) return false;
 
-      // 3. Horizontal neighbors must share the same across word (prevents
-      //    unwanted two-letter collisions side by side).
+      // 3. Horizontal neighbors must share the same across word, when either
+      //    has one (prevents unwanted parallel collisions side by side).
       final rightNeighbor = characters[location.right];
-      if (rightNeighbor != null) {
-        final acrossWord = character.acrossWord;
-        if (acrossWord == null || rightNeighbor.acrossWord != acrossWord) return false;
+      if (rightNeighbor != null && rightNeighbor.acrossWord != character.acrossWord) {
+        return false;
       }
 
-      // 4. Vertical neighbors must share the same down word.
+      // 4. Vertical neighbors must share the same down word, when either
+      //    has one.
       final downNeighbor = characters[location.down];
-      if (downNeighbor != null) {
-        final downWord = character.downWord;
-        if (downWord == null || downNeighbor.downWord != downWord) return false;
+      if (downNeighbor != null && downNeighbor.downWord != character.downWord) {
+        return false;
       }
     }
 
@@ -233,5 +234,100 @@ abstract class Crossword implements Built<Crossword, CrosswordBuilder> {
   }
 }
 
-@SerializersFor([Location, Crossword, CrosswordWord, CrosswordCharacter])
+@SerializersFor([Location, Crossword, CrosswordWord, CrosswordCharacter, WorkQueue])
 final Serializers serializers = _$serializers;
+
+/// The backtracking search frontier for crossword generation.
+///
+/// Tracks the [Crossword] built so far, the open intersection cells to try
+/// extending with a crossing word (`locationsToTry`), the cells known to be
+/// dead ends (`badLocations`), and the dictionary of `candidateWords`.
+abstract class WorkQueue implements Built<WorkQueue, WorkQueueBuilder> {
+  WorkQueue._();
+
+  factory WorkQueue([void Function(WorkQueueBuilder b) updates]) = _$WorkQueue;
+
+  Crossword get crossword;
+
+  /// Open cells that may still accept a crossing word, mapped to the
+  /// [Direction] the crossing word must take.
+  BuiltMap<Location, Direction> get locationsToTry;
+
+  /// Cells that failed to accept any candidate word and are dead ends.
+  BuiltSet<Location> get badLocations;
+
+  BuiltSet<String> get candidateWords;
+
+  bool get isCompleted => locationsToTry.isEmpty || candidateWords.isEmpty;
+
+  /// Seeds a queue from [crossword]: when the crossword is empty the only
+  /// location to try is [startLocation]; otherwise every placed character
+  /// that belongs to exactly one word and is not blocked by a parallel
+  /// neighbor becomes a candidate intersection for a crossing word in the
+  /// perpendicular direction.
+  static WorkQueue from({
+    required Crossword crossword,
+    required Iterable<String> candidateWords,
+    required Location startLocation,
+  }) {
+    final builder = WorkQueueBuilder()
+      ..crossword = crossword.toBuilder()
+      ..candidateWords = BuiltSet<String>(candidateWords).toBuilder()
+      ..badLocations = SetBuilder<Location>();
+
+    if (crossword.words.isEmpty) {
+      builder.locationsToTry[startLocation] = Direction.across;
+    } else {
+      builder.locationsToTry.addAll(_openIntersections(crossword, builder.badLocations.build()));
+    }
+
+    return builder.build();
+  }
+
+  /// Marks [location] as a known bad location and drops it from the queue.
+  WorkQueue remove(Location location) => rebuild(
+    (b) => b
+      ..locationsToTry.remove(location)
+      ..badLocations.add(location),
+  );
+
+  /// Recomputes the open intersections from [crossword], preserving known
+  /// bad locations and candidate words.
+  WorkQueue updateFrom(Crossword crossword) => rebuild(
+    (b) => b
+      ..crossword = crossword.toBuilder()
+      ..locationsToTry = MapBuilder(_openIntersections(crossword, badLocations)),
+  );
+
+  /// Cells belonging to exactly one word whose perpendicular neighbors leave
+  /// room for a crossing word, mapped to the required crossing direction.
+  static Map<Location, Direction> _openIntersections(
+    Crossword crossword,
+    BuiltSet<Location> badLocations,
+  ) {
+    final locationsToTry = <Location, Direction>{};
+
+    for (final MapEntry(key: location, value: character) in crossword.characters.entries) {
+      final direction = switch ((character.acrossWord, character.downWord)) {
+        (null, null) => throw StateError('Character is not part of a word'),
+        (null, _) => Direction.across,
+        (_, null) => Direction.down,
+        (_, _) => null, // Complete intersection: no room for another word.
+      };
+      if (direction == null) continue;
+
+      // A neighbor on the start side of the crossing direction blocks the
+      // placement of any perpendicular word through this cell.
+      final blocked = switch (direction) {
+        Direction.across => crossword.characters[location.left] != null,
+        Direction.down => crossword.characters[location.up] != null,
+      };
+      if (blocked) continue;
+
+      if (badLocations.contains(location)) continue;
+      locationsToTry[location] = direction;
+    }
+
+    return locationsToTry;
+  }
+}
